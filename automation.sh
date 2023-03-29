@@ -20,10 +20,23 @@ then
         sudo systemctl enable apache2
 fi
 
+if [ ! -f /var/www/html/inventory.html ]
+then
+    echo -e "Log Type\tTime Created\tType\tSize" > /var/www/html/inventory.html
+fi
+
 cd /var/log/apache2/
 timestamp=$(date '+%d%m%Y-%H%M%S')
 myname="smruti"
 s3_bucket="upgrad-smruti"
-
 tar -cvf /tmp/${myname}-httpd-logs-${timestamp}.tar *.log
 aws s3 cp /tmp/${myname}-httpd-logs-${timestamp}.tar s3://${s3_bucket}/${myname}-httpd-logs-${timestamp}.tar
+
+tar_file_size=$(du -h /tmp/${myname}-httpd-logs-${timestamp}.tar | awk '{print $1 }')
+
+echo -e "httpd-logs\t$timestamp\ttar\t$tar_file_size" >> /var/www/html/inventory.html
+
+if [ ! -f /etc/cron.d/automation ]
+then
+        echo "0 0 * * * root /root/Automation_Project/automation.sh" > /etc/cron.d/automation
+fi
